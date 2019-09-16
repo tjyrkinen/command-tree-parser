@@ -1,0 +1,38 @@
+{
+  "name": "command-tree-parser",
+  "version": "1.0.0",
+  "description": "Parser generator for command trees for uses such as a complex Discord bot command parsing",
+  "main": "dist/index.js",
+  "dependencies": {
+    "@types/jest": "^24.0.18",
+    "ts-jest": "^24.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.7.5",
+    "jest": "^24.9.0",
+    "typescript": "^3.6.3"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "transform": {
+      "\\.(ts|tsx)$": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "/test/.*\\.(ts|tsx|js)$"
+  },
+  "keywords": [
+    "typescript",
+    "command",
+    "parser",
+    "generator",
+    "tree"
+  ],
+  "author": "Toni Jyrkinen <tjyrkinen@gmail.com>",
+  "license": "ISC"
+}
