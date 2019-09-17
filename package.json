@@ -1,7 +1,7 @@
 {
   "name": "command-tree-parser",
   "version": "1.0.0",
-  "description": "Parser generator for command trees for uses such as a complex Discord bot command parsing",
+  "description": "Parser for command trees for uses such as a complex Discord bot command interpretation",
   "main": "dist/index.js",
   "dependencies": {
     "@types/jest": "^24.0.18",

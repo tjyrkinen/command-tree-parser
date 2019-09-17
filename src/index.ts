@@ -108,7 +108,7 @@ export default class CommandTreeParser {
 const partial = (fn: Function, ...applied: any[]) => (...args: any[]) => fn(...applied, ...args);
 
 export function respN<T>(n: number, fn: (...args: any[]) => ParseResult<T>) {
-  return (input: undefined, ...args: any[]) => fn(...(args.slice(args.length - n)));
+  return (_input: undefined, ...args: any[]) => fn(...(args.slice(args.length - n)));
 }
 
 export const resp = partial(respN, 0);
