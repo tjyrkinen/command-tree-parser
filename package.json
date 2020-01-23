@@ -13,8 +13,9 @@
     "typescript": "^3.6.3"
   },
   "scripts": {
-    "build": "tsc",
-    "test": "jest"
+    "build": "tsc -d",
+    "test": "jest",
+    "postinstall": "npm run build"
   },
   "jest": {
     "moduleFileExtensions": [
