@@ -17,8 +17,8 @@ const defaultOptions: CTPOptions = {
   debug: false,
 }
 
-interface OK<T> { ok: true, value: T };
-type NoMatch = { ok: false, value: undefined };
+export interface OK<T> { ok: true, value: T };
+export type NoMatch = { ok: false, value: undefined };
 export type ParseResult<T> = OK<T> | NoMatch;
 
 export const ok: <T>(value: T) => OK<T> = (value) => ({ ok: true, value });

@@ -120,3 +120,11 @@ describe('complex', () => {
   })
 })
 
+// describe('catch many params', () => {
+//   test('catch all', () => {
+//     const ctp = new CTP([
+//       ['hello', ]
+//     ])
+//   })
+// })
+
