@@ -1,4 +1,4 @@
-import CTP, { isNoMatch, Transformers as T, ok, resp2 } from '../src/index';
+import CTP, { isNoMatch, Transformers as T, ok, resp2, ParseResult, isOK, noMatch, resp1 } from '../src/index';
 
 test('sanity', () => {
   expect(1).toBe(1);
@@ -117,6 +117,74 @@ describe('complex', () => {
 
     const response2 = ctp.parse(('add 3 7'));
     expect(response2.value).toBe(10);
+  })
+
+  test.only('multi input (word) function matcher #1', () => {
+    const echoParser = (_current: string, _previous: any[], remaining: string[]): ParseResult<string> => {
+      return ok(remaining.join(' '), remaining.length);
+    };
+
+    const ctp2 = new CTP([
+      [echoParser]
+    ], {debug: true});
+
+    const response = ctp2.parse('please reply with this!')
+
+    expect(response.value).toBe('please reply with this!');
+  });
+
+  test('multi input (word) function matcher #2', () => {
+    const thanksParser = (_current: string, _previous: any[], remaining: string[]): ParseResult<string> => {
+      if (/thanks,?/.test(remaining.join(' ')) || /thank you,?/.test(remaining.join(' '))) {
+        return ok(remaining[remaining.length - 1]);
+      } else {
+        return noMatch;
+      }
+    };
+
+    const ctp2 = new CTP([
+      [thanksParser]
+    ])
+
+    const response1 = ctp2.parse('thanks, john');
+    expect(response1.value).toBe('john');
+    const response2 = ctp2.parse('thank you, john');
+    expect(response2.value).toBe('john');
+    const response3 = ctp2.parse('bye');
+    expect(isOK(response3)).toBe(false);
+  })
+
+  test('multi input matcher consumes variable number of items', () => {
+    const takeNumbers = (_current: string, _previous: any[], _remaining: string[]): ParseResult<number[]> => {
+      let result: number[] = [];
+      for (const x of _remaining) {
+        if (Number.isFinite(parseFloat(x))) {
+          result.push(parseFloat(x));
+        } else {
+          break;
+        }
+      }
+
+      if (result.length === 0) {
+        return noMatch;
+      } else {
+        return ok(result);
+      }
+    }
+
+    const ctp2 = new CTP([
+      ['take', [
+        [takeNumbers, resp1((numbers: number[]) => ok(numbers[0] * numbers[1]))],
+        [takeNumbers, resp1((numbers: number[]) => ok(numbers[0] + numbers[1] + numbers[2]))],
+      ]]
+    ]);
+
+    const response1 = ctp2.parse('take 2 3 product');
+    expect(response1.value).toBe(6);
+    const response2 = ctp2.parse('take 2 3 4 sum'); 
+    expect(response2.value).toBe(9);
+    const response3 = ctp2.parse('take five product');
+    expect(isNoMatch(response3)).toBe(true);
   })
 })
 

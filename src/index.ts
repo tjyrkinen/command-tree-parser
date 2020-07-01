@@ -2,7 +2,7 @@ export interface CommandTree extends Array<SubCommand> {};
 
 export type SubCommand = Matcher[];
 
-export type FnMatcher = (currentInput: string, ...previousResults: any[]) => ParseResult<any>;
+export type FnMatcher = (currentInput: string, previousResults: any[], remainingArgs: string[]) => ParseResult<any>;
 export type Matcher = string | FnMatcher | CommandTree;
 
 export interface CTPOptions {
@@ -17,12 +17,12 @@ const defaultOptions: CTPOptions = {
   debug: false,
 }
 
-export interface OK<T> { ok: true, value: T };
-export type NoMatch = { ok: false, value: undefined };
+export interface OK<T> { ok: true, value: T, argsConsumed?: number };
+export type NoMatch = { ok: false, value: undefined, argsConsumed: undefined };
 export type ParseResult<T> = OK<T> | NoMatch;
 
-export const ok: <T>(value: T) => OK<T> = (value) => ({ ok: true, value });
-export const noMatch: NoMatch = { ok: false, value: undefined }
+export const ok: <T>(value: T, argsConsumed?: number) => OK<T> = (value, argsConsumed) => ({ ok: true, value, argsConsumed });
+export const noMatch: NoMatch = { ok: false, value: undefined, argsConsumed: undefined }
 
 export function isOK<T>(x: ParseResult<T>): x is OK<T> { return x.ok }
 export function isNoMatch<T>(x: ParseResult<T>): x is NoMatch { return !x.ok }
@@ -50,24 +50,28 @@ export default class CommandTreeParser {
 
     let result: ParseResult<any> = noMatch;
 
-    const getResult: (input: string, matcher: Matcher, previousResults: any[]) => ParseResult<any> =
-      (input, matcher, previousResults) => {
-        this.debug('getResult', input, matcher)
-        if (typeof matcher === 'string') {
-          if (input === undefined || (this.options.caseInsensitive
-              ? (matcher.toLowerCase() === input.toLowerCase())
-              : (matcher === input)))
-          {
-            return ok(matcher);
-          } else {
-            return noMatch;
-          }
-        } else if (typeof matcher === 'function') {
-          return matcher(input, ...previousResults);
+    const getResult = (input: string, matcher: Matcher, previousResults: any[], remainingArgs: string[]): ParseResult<any> => {
+      this.debug('getResult', input, matcher)
+      if (typeof matcher === 'string') {
+        if (input === undefined || (this.options.caseInsensitive
+            ? (matcher.toLowerCase() === input.toLowerCase())
+            : (matcher === input)))
+        {
+          return ok(matcher, 1);
         } else {
-          throw new Error('Unknown matcher type');
+          return noMatch;
         }
+      } else if (typeof matcher === 'function') {
+        const result = matcher(input, previousResults, remainingArgs);
+        if (result.ok && result.argsConsumed === undefined) {
+          result.argsConsumed = 1;
+        }
+        this.debug('getResult-result', result);
+        return result;
+      } else {
+        throw new Error('Unknown matcher type');
       }
+    }
 
     if (Array.isArray(parser[0])) {
       for (const subCommand of parser as CommandTree) {
@@ -85,14 +89,14 @@ export default class CommandTreeParser {
         return noMatch;
       }
 
-      result = getResult(args[0], matcher, previousResults);
+      result = getResult(args[0], matcher, previousResults, args);
       if (isNoMatch(result)) {
         return noMatch;
       } else {
         if (parser.length === 1 && args.length === 0) {
           return result;
         } else {
-          return this.parseInner(parser.slice(1), args.slice(1), previousResults.concat(valueOf(result)));
+          return this.parseInner(parser.slice(1), args.slice(result.argsConsumed), previousResults.concat(valueOf(result)));
         }
       }
     }
@@ -108,7 +112,7 @@ export default class CommandTreeParser {
 const partial = (fn: Function, ...applied: any[]) => (...args: any[]) => fn(...applied, ...args);
 
 export function respN<T>(n: number, fn: (...args: any[]) => ParseResult<T>) {
-  return (_input: undefined, ...args: any[]) => fn(...(args.slice(args.length - n)));
+  return (_input: undefined, args: any[], _remaining: string[]) => fn(...(args.slice(args.length - n)));
 }
 
 export const resp = partial(respN, 0);
@@ -118,6 +122,10 @@ export const resp3 = partial(respN, 3);
 export const resp4 = partial(respN, 4);
 
 export namespace Transformers {
+  export function STRING(s: string): ParseResult<string> {
+    return ok(s);
+  }
+
   export function NUMBER(s: string): ParseResult<number> {
     const res = parseFloat(s);
     return Number.isNaN(res) ? noMatch : ok(res);
