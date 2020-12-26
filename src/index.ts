@@ -150,4 +150,14 @@ export namespace Transformers {
     const res = parseInt(s, 10);
     return Number.isNaN(res) ? noMatch : ok(res, 1);
   }
+
+  export function OPTIONAL<T>(matcher: FnMatcher): FnMatcher {
+    return (currentInput: string, previousResults: any[], remainingArgs: string[]) => {
+      if (!currentInput) {
+        return ok(null, 0);
+      } else {
+        return matcher(currentInput, previousResults, remainingArgs);
+      }
+    }
+  }
 }
