@@ -2,7 +2,7 @@ export interface CommandTree extends Array<SubCommand> {};
 
 export type SubCommand = Matcher[];
 
-export type FnMatcher = { terminal?: boolean } & ((currentInput: string, previousResults: any[], remainingArgs: string[]) => ParseResult<any>);
+export type FnMatcher<T = any> = { terminal?: boolean } & ((currentInput: string, previousResults: any[], remainingArgs: string[]) => ParseResult<T>);
 export type Matcher = string | FnMatcher | CommandTree;
 
 export interface CTPOptions {
@@ -151,7 +151,7 @@ export namespace Transformers {
     return Number.isNaN(res) ? noMatch : ok(res, 1);
   }
 
-  export function OPTIONAL<T>(matcher: FnMatcher): FnMatcher {
+  export function OPTIONAL<T>(matcher: FnMatcher<T>): FnMatcher<T | null> {
     return (currentInput: string, previousResults: any[], remainingArgs: string[]) => {
       if (!currentInput) {
         return ok(null, 0);
