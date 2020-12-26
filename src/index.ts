@@ -124,8 +124,8 @@ export default class CommandTreeParser {
 
 const partial = (fn: Function, ...applied: any[]) => (...args: any[]) => fn(...applied, ...args);
 
-export function respN<T>(n: number, fn: { terminal: true } & ((...args: any[]) => ParseResult<T>)) {
-  const resultFn = (_input: undefined, args: any[], _remaining: string[]) => fn(...(args.slice(args.length - n)));
+export function respN<T>(n: number, fn: (...args: any[]) => ParseResult<T>): FnMatcher {
+  const resultFn = (_input: unknown, previousResults: any[], _remaining: string[]) => fn(...(previousResults.slice(previousResults.length - n)));
   resultFn.terminal = true;
   return resultFn;
 }
