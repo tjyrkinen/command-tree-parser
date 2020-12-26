@@ -90,6 +90,45 @@ describe('complex', () => {
     expect(response2.value).toBe('hello to you');
   })
 
+  test('match input without value result', () => {
+    const ctp = new CTP([
+      ['a', 'b'],
+    ]);
+
+    const response1 = ctp.parse('a b');
+    expect(isOK(response1)).toBe(true);
+  })
+
+  test('do not match input without value result with too many params', () => {
+    const ctp = new CTP([
+      ['a', 'b'],
+    ]);
+
+    const response1 = ctp.parse('a b c');
+    expect(isNoMatch(response1)).toBe(true);
+  })
+
+  test('extra param is not accepted to a terminal resp function', () => {
+    const ctp = new CTP([
+      ['a', 'b', resp1(() => ok(null))],
+    ]);
+
+    const response1 = ctp.parse('a b c');
+    expect(isNoMatch(response1)).toBe(true);
+  })
+
+  test('extra param IS accepted to a non-terminal resp function and it is optional', () => {
+    const ctp = new CTP([
+      ['a', 'b', (_lastInput) => ok(null)],
+    ]);
+
+    const response1 = ctp.parse('a b c');
+    expect(isOK(response1)).toBe(true);
+    const response2 = ctp.parse('a b');
+    expect(isOK(response2)).toBe(true);
+  })
+
+
   test('branched match', () => {
     const ctp = new CTP([
       ['hello', [
@@ -119,14 +158,14 @@ describe('complex', () => {
     expect(response2.value).toBe(10);
   })
 
-  test.only('multi input (word) function matcher #1', () => {
+  test('multi input (word) function matcher #1', () => {
     const echoParser = (_current: string, _previous: any[], remaining: string[]): ParseResult<string> => {
       return ok(remaining.join(' '), remaining.length);
     };
 
     const ctp2 = new CTP([
       [echoParser]
-    ], {debug: true});
+    ]);
 
     const response = ctp2.parse('please reply with this!')
 
@@ -136,7 +175,7 @@ describe('complex', () => {
   test('multi input (word) function matcher #2', () => {
     const thanksParser = (_current: string, _previous: any[], remaining: string[]): ParseResult<string> => {
       if (/thanks,?/.test(remaining.join(' ')) || /thank you,?/.test(remaining.join(' '))) {
-        return ok(remaining[remaining.length - 1]);
+        return ok(remaining[remaining.length - 1], remaining.length);
       } else {
         return noMatch;
       }
@@ -168,31 +207,40 @@ describe('complex', () => {
       if (result.length === 0) {
         return noMatch;
       } else {
-        return ok(result);
+        return ok(result, result.length);
       }
     }
 
     const ctp2 = new CTP([
       ['take', [
-        [takeNumbers, resp1((numbers: number[]) => ok(numbers[0] * numbers[1]))],
-        [takeNumbers, resp1((numbers: number[]) => ok(numbers[0] + numbers[1] + numbers[2]))],
+        [takeNumbers, 'product', resp2((numbers: number[]) => ok(numbers[0] * numbers[1]))],
+        [takeNumbers, 'sum', resp2((numbers: number[]) => ok(numbers[0] + numbers[1] + numbers[2]))],
       ]]
     ]);
 
     const response1 = ctp2.parse('take 2 3 product');
     expect(response1.value).toBe(6);
-    const response2 = ctp2.parse('take 2 3 4 sum'); 
+    const response2 = ctp2.parse('take 2 3 4 sum');
     expect(response2.value).toBe(9);
     const response3 = ctp2.parse('take five product');
     expect(isNoMatch(response3)).toBe(true);
   })
-})
 
-// describe('catch many params', () => {
-//   test('catch all', () => {
-//     const ctp = new CTP([
-//       ['hello', ]
-//     ])
-//   })
-// })
+  test('optional input at the end', () => {
+    const optionalNumber = (current: string) => {
+      return ok(current ? parseFloat(current) : null, current ? 1 : 0);
+    }
+
+    const ctp2 = new CTP([
+      ['sumopt', T.NUMBER, optionalNumber, resp2((a: number, b: number | null) => ok(a + (b ?? 0)))],
+    ])
+
+    const response1 = ctp2.parse('sumopt 1 2');
+    expect(response1.value).toBe(3);
+    const response2 = ctp2.parse('sumopt 1');
+    expect(response2.value).toBe(1);
+    const response3 = ctp2.parse('sumopt 1 2 3');
+    expect(isOK(response3)).toBe(false);
+  })
+})
 
