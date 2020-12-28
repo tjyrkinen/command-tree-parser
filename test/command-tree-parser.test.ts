@@ -1,4 +1,4 @@
-import CTP, { isNoMatch, Transformers as T, ok, resp2, ParseResult, isOK, noMatch, resp1 } from '../src/index';
+import CTP, { isNoMatch, Transformers as T, ok, resp2, ParseResult, isOK, noMatch, resp1, resp3 } from '../src/index';
 
 test('sanity', () => {
   expect(1).toBe(1);
@@ -240,6 +240,23 @@ describe('complex', () => {
     const response2 = ctp2.parse('sumopt 1');
     expect(response2.value).toBe(1);
     const response3 = ctp2.parse('sumopt 1 2 3');
+    expect(isOK(response3)).toBe(false);
+  })
+
+  test('optional input at front', () => {
+    const optionalNumber = (current: string) => {
+      return Number.isFinite(parseFloat(current)) ? ok(parseFloat(current), 1) : ok(null, 0);
+    }
+
+    const ctp2 = new CTP([
+      [optionalNumber, 'plus', T.NUMBER, resp3((a: number | null, _: string, b: number) => ok((a ?? 0) + b))],
+    ], {debug: true})
+
+    const response1 = ctp2.parse('plus 2');
+    expect(response1.value).toBe(2);
+    const response2 = ctp2.parse('3 plus 2');
+    expect(response2.value).toBe(5);
+    const response3 = ctp2.parse('x plus 3');
     expect(isOK(response3)).toBe(false);
   })
 })
